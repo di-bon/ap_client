@@ -234,7 +234,7 @@ impl Client {
         let mut temp_path = temp_dir();
         let mut rng = rand::rng();
         let num = rng.random_range(0..=100);
-        let path = format!("image_{num}");
+        let path = format!("image_{num}.png");
         temp_path.push(path);
 
         // Save the image to a file
