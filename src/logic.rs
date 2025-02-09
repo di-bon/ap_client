@@ -18,29 +18,7 @@ pub trait Getter {
 
 pub trait ClientLogic: Getter + Send {
     /// Starts the server, making it able to receive and send `Message`s
-    fn run(&mut self) {
-        loop {
-            select! {
-                recv(self.get_server_command_rx()) -> command => {
-                    if let Ok(command) = command {
-                        match command {
-                            ClientCommand::Quit => {
-                                break;
-                            },
-                        }
-                    }
-                    panic!("Error while receiving ServerLogicCommand");
-                },
-                recv(self.get_listener_to_server_logic_rx()) -> message => {
-                    if let Ok(message) = message {
-                        self.process_message(&message);
-                    } else {
-                        panic!("Error while receiving a message from listener");
-                    }
-                },
-            }
-        }
-    }
+    fn run(&mut self);
 
     /// Processes a received `Message`
     fn process_message(&mut self, message: &Message) {

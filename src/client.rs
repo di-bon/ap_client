@@ -1,6 +1,6 @@
 use std::thread;
 use std::time::Duration;
-use crossbeam_channel::{Receiver, Sender};
+use crossbeam_channel::{select, Receiver, Sender};
 use messages::{ChatResponse, ErrorType, MediaRequest, MediaResponse, Message, MessageType, RequestType, ResponseType, ServerType, TextRequest, TextResponse};
 use rand::{Rng, RngCore};
 use wg_2024::network::NodeId;
@@ -34,6 +34,38 @@ impl Getter for Client {
 }
 
 impl ClientLogic for Client {
+    fn run(&mut self) {
+        for action in self.actions {
+            self
+                .client_logic_to_transmitter_tx
+                .send(action)
+                .unwrap_or_else(|_| panic!("Cannot send messages to transmitter"));
+
+            select! {
+                recv(self.get_server_command_rx()) -> command => {
+                    if let Ok(command) = command {
+                        match command {
+                            ClientCommand::Quit => {
+                                break;
+                            },
+                        }
+                    }
+                    panic!("Error while receiving ServerLogicCommand");
+                },
+                recv(self.get_listener_to_server_logic_rx()) -> message => {
+                    if let Ok(message) = message {
+                        self.process_message(&message);
+                    } else {
+                        panic!("Error while receiving a message from listener");
+                    }
+                },
+            }
+        }
+
+        let command = self.command_rx.recv().unwrap();
+    }
+
+
     fn process_response(&mut self, session_id: u64, source_id: NodeId, response_type: &ResponseType) {
         match response_type {
             ResponseType::TextResponse(text_response) => {

@@ -186,7 +186,7 @@ pub trait DibServerTrait: DibGetter {
         let listener = self.get_listener().clone();
 
         let listener_handle = thread::Builder::new()
-            .name(format!("server_{}_listener", self.get_node_id()))
+            .name(format!("client_{}_listener", self.get_node_id()))
             .spawn(move || {
                 let mut listener = match listener.lock() {
                     Ok(listener) => listener,
@@ -198,14 +198,14 @@ pub trait DibServerTrait: DibGetter {
             })
             .unwrap_or_else(|_| {
                 panic!(
-                    "Cannot spawn a new thread 'server_{}_listener'",
+                    "Cannot spawn a new thread 'client_{}_listener'",
                     self.get_node_id()
                 )
             });
 
         let transmitter = self.get_transmitter().clone();
         let transmitter_handle = thread::Builder::new()
-            .name(format!("server_{}_transmitter", self.get_node_id()))
+            .name(format!("client_{}_transmitter", self.get_node_id()))
             .spawn(move || {
                 let mut transmitter = match transmitter.lock() {
                     Ok(transmitter) => transmitter,
@@ -217,14 +217,14 @@ pub trait DibServerTrait: DibGetter {
             })
             .unwrap_or_else(|_| {
                 panic!(
-                    "Cannot spawn a new thread 'server_{}_transmitter'",
+                    "Cannot spawn a new thread 'client_{}_transmitter'",
                     self.get_node_id()
                 )
             });
 
         let logic = self.get_logic().clone();
-        let server_logic_handle = thread::Builder::new()
-            .name(format!("server_{}_logic", self.get_node_id()))
+        let client_logic_handle = thread::Builder::new()
+            .name(format!("client_{}_logic", self.get_node_id()))
             .spawn(move || {
                 let mut logic = match logic.lock() {
                     Ok(logic) => logic,
@@ -236,7 +236,7 @@ pub trait DibServerTrait: DibGetter {
             })
             .unwrap_or_else(|_| {
                 panic!(
-                    "Cannot spawn a new thread 'server_{}_logic'",
+                    "Cannot spawn a new thread 'client_{}_logic'",
                     self.get_node_id()
                 )
             });
@@ -274,7 +274,7 @@ pub trait DibServerTrait: DibGetter {
         }
 
         let _ = listener_handle.join();
-        let _ = server_logic_handle.join();
+        let _ = client_logic_handle.join();
         let _ = transmitter_handle.join();
     }
 }
