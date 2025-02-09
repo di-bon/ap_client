@@ -58,7 +58,7 @@ impl DibClient {
 
         let transmitter = Transmitter::new(
             node_id,
-            NodeType::Server,
+            NodeType::Client,
             listener_to_transmitter_rx,
             logic_to_transmitter_rx,
             drones_tx,
