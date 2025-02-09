@@ -1,7 +1,7 @@
 use std::thread;
 use std::time::Duration;
 use crossbeam_channel::{select_biased, Receiver, Sender};
-use messages::{ChatResponse, MediaRequest, MediaResponse, Message, MessageType, RequestType, ResponseType, ServerType, TextResponse};
+use messages::{ChatRequest, ChatResponse, MediaRequest, MediaResponse, Message, MessageType, RequestType, ResponseType, ServerType, TextResponse};
 use rand::{Rng, RngCore};
 use wg_2024::network::NodeId;
 use regex::Regex;
@@ -39,6 +39,21 @@ impl ClientLogic for Client {
         let mut rng = rand::rng();
         let actions = self.actions.clone();
         for (destination, action) in actions {
+            let expect_response = match &action {
+                RequestType::ChatRequest(chat_request) => {
+                    !matches!(chat_request, ChatRequest::Register)
+                }
+                _ => true
+            };
+
+            match &action {
+                RequestType::TextRequest(_) => {}
+                RequestType::MediaRequest(_) => {}
+                RequestType::ChatRequest(chat_request) => {
+
+                }
+                RequestType::DiscoveryRequest(_) => {}
+            }
             let message = Message {
                 source: self.node_id,
                 destination,
@@ -53,24 +68,27 @@ impl ClientLogic for Client {
                 .send(message)
                 .unwrap_or_else(|_| panic!("Cannot send messages to transmitter"));
 
-            select_biased! {
-                recv(self.get_server_command_rx()) -> command => {
-                    if let Ok(command) = command {
-                        match command {
-                            ClientCommand::Quit => {
-                                break;
-                            },
+
+            if expect_response {
+                select_biased! {
+                    recv(self.get_server_command_rx()) -> command => {
+                        if let Ok(command) = command {
+                            match command {
+                                ClientCommand::Quit => {
+                                    break;
+                                },
+                            }
                         }
-                    }
-                    panic!("Error while receiving ServerLogicCommand");
-                },
-                recv(self.get_listener_to_server_logic_rx()) -> message => {
-                    if let Ok(message) = message {
-                        self.process_message(&message);
-                    } else {
-                        panic!("Error while receiving a message from listener");
-                    }
-                },
+                        panic!("Error while receiving ServerLogicCommand");
+                    },
+                    recv(self.get_listener_to_server_logic_rx()) -> message => {
+                        if let Ok(message) = message {
+                            self.process_message(&message);
+                        } else {
+                            panic!("Error while receiving a message from listener");
+                        }
+                    },
+                }
             }
 
             thread::sleep(self.sleep_time);
