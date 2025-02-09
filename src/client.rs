@@ -2,7 +2,7 @@ use std::thread;
 use std::time::Duration;
 use crossbeam_channel::{select_biased, Receiver, Sender};
 use messages::{ChatResponse, MediaRequest, MediaResponse, Message, MessageType, RequestType, ResponseType, ServerType, TextResponse};
-use rand::{RngCore};
+use rand::{Rng, RngCore};
 use wg_2024::network::NodeId;
 use regex::Regex;
 use crate::logic::{ClientCommand, ClientLogic, Getter};
@@ -232,7 +232,10 @@ impl Client {
 
         // Create a temporary file path
         let mut temp_path = temp_dir();
-        temp_path.push("received_image.png");
+        let mut rng = rand::rng();
+        let num = rng.random_range(0..=100);
+        let path = format!("image_{num}");
+        temp_path.push(path);
 
         // Save the image to a file
         img.save(&temp_path).unwrap();
