@@ -73,7 +73,7 @@ impl ClientLogic for Client {
                 },
             }
 
-            thread::sleep(self.sleep_time);
+            // thread::sleep(self.sleep_time);
         }
 
         let command = self.command_rx.recv().unwrap();
@@ -155,6 +155,8 @@ impl Client {
                 for cap in re.captures_iter(text) {
                     medias.push(cap[1].to_string());
                 }
+
+                log::info!("Medias found to request: {medias:?}");
 
                 let mut rng = rand::rng();
 
