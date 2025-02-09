@@ -71,6 +71,8 @@ impl ClientLogic for Client {
                     }
                 },
             }
+
+            thread::sleep(Duration::from_secs(3));
         }
 
         let command = self.command_rx.recv().unwrap();
