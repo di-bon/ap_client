@@ -22,7 +22,6 @@ pub trait ClientLogic: Getter + Send {
 
     /// Processes a received `Message`
     fn process_message(&mut self, message: &Message) {
-        println!("Received message {message:?}");
         log::info!("Received message {message:?}");
 
         let session_id = message.session_id;
