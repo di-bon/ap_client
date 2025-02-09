@@ -73,7 +73,7 @@ impl ClientLogic for Client {
                 },
             }
 
-            // thread::sleep(self.sleep_time);
+            thread::sleep(self.sleep_time);
         }
 
         loop {
