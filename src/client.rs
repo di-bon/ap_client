@@ -36,7 +36,8 @@ impl Getter for Client {
 impl ClientLogic for Client {
     fn run(&mut self) {
         let mut rng = rand::rng();
-        for (destination, action) in self.actions {
+        let actions = self.actions.clone();
+        for (destination, action) in actions {
             let message = Message {
                 source: self.node_id,
                 destination,
