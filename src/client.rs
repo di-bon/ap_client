@@ -145,10 +145,13 @@ impl Client {
                  */
             }
             TextResponse::Text(text) => {
-                let re = Regex::new(r"\{\{\s*([^{}\s]+\.png)\s*}}").unwrap();                let medias: Vec<String> = re
-                    .find_iter(text)
-                    .map(|mat| mat.as_str().to_string())
-                    .collect();
+                let re = Regex::new(r"\{\{\s*([^{}\s]+\.png)\s*}}").unwrap();
+
+                let mut medias = Vec::new();
+                for cap in re.captures_iter(text) {
+                    medias.push(cap[1].to_string());
+                }
+
                 let mut rng = rand::rng();
 
                 for media in medias {
