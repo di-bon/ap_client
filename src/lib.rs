@@ -8,7 +8,7 @@ use ap_listener::{Command as ListenerCommand, Listener};
 use ap_sc_notifier::SimulationControllerNotifier;
 use ap_transmitter::{Command as TransmitterCommand, Transmitter};
 use crossbeam_channel::{unbounded, Receiver, Sender};
-use messages::Message;
+use messages::{Message, RequestType};
 use messages::node_event::NodeEvent;
 use wg_2024::controller::DroneCommand;
 use wg_2024::network::NodeId;
@@ -42,7 +42,7 @@ impl DibClient {
         drones_tx: HashMap<NodeId, Sender<Packet>>,
         simulation_controller_tx: Sender<NodeEvent>,
         drone_command_rx: Receiver<DroneCommand>,
-        actions: Vec<Message>,
+        actions: Vec<(NodeId, RequestType)>,
     ) -> (Self, Sender<Command>) {
         let (listener_to_transmitter_tx, listener_to_transmitter_rx) = unbounded();
         let (listener_to_server_logic_tx, listener_to_server_logic_rx) = unbounded();

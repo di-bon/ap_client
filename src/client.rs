@@ -12,7 +12,7 @@ pub struct Client {
     client_logic_to_transmitter_tx: Sender<Message>,
     listener_to_client_logic_rx: Receiver<Message>,
     command_rx: Receiver<ClientCommand>,
-    actions: Vec<Message>,
+    actions: Vec<(NodeId, RequestType)>,
 }
 
 impl Getter for Client {
@@ -35,10 +35,20 @@ impl Getter for Client {
 
 impl ClientLogic for Client {
     fn run(&mut self) {
-        for action in self.actions {
+        let mut rng = rand::rng();
+        for (destination, action) in self.actions {
+            let message = Message {
+                source: self.node_id,
+                destination,
+                session_id: rng.next_u64(),
+                content: MessageType::Request(
+                    action
+                ),
+            };
+
             self
                 .client_logic_to_transmitter_tx
-                .send(action)
+                .send(message)
                 .unwrap_or_else(|_| panic!("Cannot send messages to transmitter"));
 
             select! {
@@ -90,7 +100,7 @@ impl Client {
         client_logic_to_transmitter_tx: Sender<Message>,
         listener_to_client_logic_rx: Receiver<Message>,
         command_rx: Receiver<ClientCommand>,
-        actions: Vec<Message>,
+        actions: Vec<(NodeId, RequestType)>,
     ) -> Self {
         Self {
             node_id,
