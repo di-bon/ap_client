@@ -115,6 +115,100 @@ impl DibClient {
             log::error!("{panic_msg}");
             eprintln!("{panic_msg}");
         }));
+
+        let listener = self.get_listener().clone();
+
+        let listener_handle = thread::Builder::new()
+            .name(format!("server_{}_listener", self.get_node_id()))
+            .spawn(move || {
+                let mut listener = match listener.lock() {
+                    Ok(listener) => listener,
+                    Err(err) => {
+                        panic!("Error while starting listener: {err:?}");
+                    }
+                };
+                listener.run();
+            })
+            .unwrap_or_else(|_| {
+                panic!(
+                    "Cannot spawn a new thread 'server_{}_listener'",
+                    self.get_node_id()
+                )
+            });
+
+        let transmitter = self.get_transmitter().clone();
+        let transmitter_handle = thread::Builder::new()
+            .name(format!("server_{}_transmitter", self.get_node_id()))
+            .spawn(move || {
+                let mut transmitter = match transmitter.lock() {
+                    Ok(transmitter) => transmitter,
+                    Err(err) => {
+                        panic!("Error while starting transmitter: {err:?}");
+                    }
+                };
+                transmitter.run();
+            })
+            .unwrap_or_else(|_| {
+                panic!(
+                    "Cannot spawn a new thread 'server_{}_transmitter'",
+                    self.get_node_id()
+                )
+            });
+
+        let logic = self.get_logic().clone();
+        let server_logic_handle = thread::Builder::new()
+            .name(format!("server_{}_logic", self.get_node_id()))
+            .spawn(move || {
+                let mut logic = match logic.lock() {
+                    Ok(logic) => logic,
+                    Err(err) => {
+                        panic!("Error while starting logic: {err:?}");
+                    }
+                };
+                logic.run();
+            })
+            .unwrap_or_else(|_| {
+                panic!(
+                    "Cannot spawn a new thread 'server_{}_logic'",
+                    self.get_node_id()
+                )
+            });
+
+        #[allow(clippy::never_loop)]
+        'command_loop: loop {
+            let command = self.get_command_rx().recv();
+            match command {
+                Ok(command) => match command {
+                    Command::Quit => {
+                        let command = ListenerCommand::Quit;
+                        self.get_listener_tx()
+                            .send(command)
+                            .unwrap_or_else(|_| panic!("Cannot communicate with listener thread"));
+
+                        let command = ClientCommand::Quit;
+                        self.get_logic_tx()
+                            .send(command)
+                            .unwrap_or_else(|_| panic!("Cannot communicate with logic thread"));
+
+                        let command = TransmitterCommand::Quit;
+                        self.get_transmitter_tx().send(command).unwrap_or_else(|_| {
+                            panic!("Cannot communicate with transmitter thread")
+                        });
+
+                        break 'command_loop;
+                    }
+                },
+                Err(error) => {
+                    let error = format!("Error while receiving Command's. Error: {error:?}");
+                    log::error!("{error}");
+                    panic!("{error}");
+                }
+            }
+        }
+
+        let _ = listener_handle.join();
+        let _ = server_logic_handle.join();
+        let _ = transmitter_handle.join();
     }
 }
 

@@ -76,6 +76,7 @@ impl ClientLogic for Client {
         }
 
         let command = self.command_rx.recv().unwrap();
+        println!("{command:?}");
     }
 
 
