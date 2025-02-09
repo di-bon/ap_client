@@ -76,8 +76,27 @@ impl ClientLogic for Client {
             // thread::sleep(self.sleep_time);
         }
 
-        let command = self.command_rx.recv().unwrap();
-        println!("{command:?}");
+        loop {
+            select_biased! {
+                recv(self.get_server_command_rx()) -> command => {
+                    if let Ok(command) = command {
+                        match command {
+                            ClientCommand::Quit => {
+                                break;
+                            },
+                        }
+                    }
+                    panic!("Error while receiving ServerLogicCommand");
+                },
+                recv(self.get_listener_to_server_logic_rx()) -> message => {
+                    if let Ok(message) = message {
+                        self.process_message(&message);
+                    } else {
+                        panic!("Error while receiving a message from listener");
+                    }
+                },
+            }
+        }
     }
 
 
