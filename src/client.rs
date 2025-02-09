@@ -1,8 +1,8 @@
 use std::thread;
 use std::time::Duration;
-use crossbeam_channel::{select, Receiver, Sender};
-use messages::{ChatResponse, ErrorType, MediaRequest, MediaResponse, Message, MessageType, RequestType, ResponseType, ServerType, TextRequest, TextResponse};
-use rand::{Rng, RngCore};
+use crossbeam_channel::{select_biased, Receiver, Sender};
+use messages::{ChatResponse, MediaRequest, MediaResponse, Message, MessageType, RequestType, ResponseType, ServerType, TextResponse};
+use rand::{RngCore};
 use wg_2024::network::NodeId;
 use regex::Regex;
 use crate::logic::{ClientCommand, ClientLogic, Getter};
@@ -53,7 +53,7 @@ impl ClientLogic for Client {
                 .send(message)
                 .unwrap_or_else(|_| panic!("Cannot send messages to transmitter"));
 
-            select! {
+            select_biased! {
                 recv(self.get_server_command_rx()) -> command => {
                     if let Ok(command) = command {
                         match command {
@@ -81,7 +81,7 @@ impl ClientLogic for Client {
     }
 
 
-    fn process_response(&mut self, session_id: u64, source_id: NodeId, response_type: &ResponseType) {
+    fn process_response(&mut self, _session_id: u64, source_id: NodeId, response_type: &ResponseType) {
         match response_type {
             ResponseType::TextResponse(text_response) => {
                 self.process_text_response(source_id, text_response);
@@ -148,7 +148,8 @@ impl Client {
                  */
             }
             TextResponse::Text(text) => {
-                let re = Regex::new(r"\{\{\s*([^{}\s]+\.png)\s*}}").unwrap();
+                log::info!("Received Text: {text}");
+                let re = Regex::new(r"\{\{\s*([^{}\s]+\.(png|jpe?g))\s*}}").unwrap();
 
                 let mut medias = Vec::new();
                 for cap in re.captures_iter(text) {
@@ -176,21 +177,22 @@ impl Client {
                 }
             }
             TextResponse::NotFound(filename) => {
-                log::warn!("File {filename} not found. Full response: {text_response:?}");
+                log::warn!("Text file '{filename}' not found. Full response: {text_response:?}");
             }
         }
     }
 
-    fn process_media_response(&mut self, source: NodeId, media_response: &MediaResponse) {
+    #[allow(clippy::unused_self)]
+    fn process_media_response(&mut self, _source: NodeId, media_response: &MediaResponse) {
         match media_response {
             MediaResponse::MediaList(list) => {
-
+                log::info!("Received MediaList: {list:?}");
             }
             MediaResponse::Media(media) => {
-                Self::open_png_from_bytes(media.clone());
+                Self::open_png_from_bytes(media.clone()).expect("Cannot open received media");
             }
             MediaResponse::NotFound(media_name) => {
-
+                log::warn!("Media file '{media_name}' not found. Full response: {media_name:?}");
             }
         }
     }
@@ -227,21 +229,23 @@ impl Client {
         Ok(())
     }
 
-    fn process_chat_response(&mut self, source: NodeId, chat_response: &ChatResponse) {
+    #[allow(clippy::unused_self)]
+    fn process_chat_response(&mut self, _source: NodeId, chat_response: &ChatResponse) {
         match chat_response {
             ChatResponse::ClientList(list) => {
-
+                log::info!("Received ClientList: {list:?}");
             }
             ChatResponse::MessageFrom { from, message } => {
-
+                log::info!("Received 'MessageFrom' from {from}, content: {message}");
             }
             ChatResponse::MessageSent => {
-
+                log::info!("Received MessageSent");
             }
         }
     }
 
+    #[allow(clippy::unused_self)]
     fn process_discovery_response(&mut self, source: NodeId, server_type: &ServerType) {
-
+        log::info!("Discovery response from {source}: {server_type:?}");
     }
 }

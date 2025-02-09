@@ -1,6 +1,4 @@
-use std::{panic, thread};
-use std::time::Duration;
-use crossbeam_channel::{select, Receiver, Sender};
+use crossbeam_channel::{Receiver, Sender};
 use messages::{ErrorType, Message, MessageType, RequestType, ResponseType};
 use wg_2024::network::NodeId;
 
