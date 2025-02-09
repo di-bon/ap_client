@@ -43,6 +43,7 @@ impl DibClient {
         simulation_controller_tx: Sender<NodeEvent>,
         drone_command_rx: Receiver<DroneCommand>,
         actions: Vec<(NodeId, RequestType)>,
+        sleep_time: Duration,
     ) -> (Self, Sender<Command>) {
         let (listener_to_transmitter_tx, listener_to_transmitter_rx) = unbounded();
         let (listener_to_server_logic_tx, listener_to_server_logic_rx) = unbounded();
@@ -84,6 +85,7 @@ impl DibClient {
             listener_to_server_logic_rx,
             logic_command_rx,
             actions,
+            sleep_time,
         );
 
         assert_eq!(transmitter.get_node_id(), listener.get_node_id());

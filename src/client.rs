@@ -13,6 +13,7 @@ pub struct Client {
     listener_to_client_logic_rx: Receiver<Message>,
     command_rx: Receiver<ClientCommand>,
     actions: Vec<(NodeId, RequestType)>,
+    sleep_time: Duration,
 }
 
 impl Getter for Client {
@@ -72,7 +73,7 @@ impl ClientLogic for Client {
                 },
             }
 
-            thread::sleep(Duration::from_secs(3));
+            thread::sleep(self.sleep_time);
         }
 
         let command = self.command_rx.recv().unwrap();
@@ -105,13 +106,15 @@ impl Client {
         listener_to_client_logic_rx: Receiver<Message>,
         command_rx: Receiver<ClientCommand>,
         actions: Vec<(NodeId, RequestType)>,
+        sleep_time: Duration,
     ) -> Self {
         Self {
             node_id,
             client_logic_to_transmitter_tx,
             listener_to_client_logic_rx,
             command_rx,
-            actions
+            actions,
+            sleep_time
         }
     }
 
